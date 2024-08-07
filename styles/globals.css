@@ -169,7 +169,14 @@ body {
 /* styles/globals.css */
  .quiz_card {
      @apply p-4 h-40 w-categoryCardWidth mx-auto gap-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 bg-white;
+     @apply transform transition-transform duration-300;
+        /* Ensure transition for scaling is applied */
+    
+ &:hover {
+    @apply scale-105;
+            /* Apply scaling on hover */
  }
+}
 
  .subscription_card {
     @apply p-4 w-full mx-auto gap-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300; }
@@ -184,7 +191,14 @@ body {
  }
 
 .game_card {
-      @apply p-4 w-full lg:max-w-gameCardWidth mx-auto gap-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 bg-white;
+    @apply p-4 w-full lg:max-w-gameCardWidth mx-auto gap-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 bg-white;
+    @apply transform transition-transform duration-300;
+    /* Ensure transition for scaling is applied */
+
+    &:hover {
+        @apply scale-105;
+        /* Apply scaling on hover */
+    }
 }
 
 .create_quiz_form {
