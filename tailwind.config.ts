@@ -45,6 +45,7 @@ const config: Config = {
         'size3': '3px', // Define custom border width
       },
       height: {
+        'categoryCardHeight': '15rem',
         'waveHeight': '20rem',
         'starHeight': '12rem',
         'quizColorheight': '8rem',

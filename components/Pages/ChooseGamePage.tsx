@@ -1,4 +1,6 @@
+// ChooseGamePage.tsx
 'use client';
+
 import React, { useState } from 'react';
 import BlueShape from '../icons/blueShape';
 import GuessWhoIcon from '../icons/guessWhoIcon';
@@ -6,14 +8,12 @@ import HotSeatIcon from '../icons/hotSeatIcon';
 import WhosThatFace from '../icons/whosthatface';
 import TriviaIcon from '../icons/triviaIcon';
 
-
 interface ChooseGamePageProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, gameTypeParam?: string) => void; // Updated function signature to accept optional gameTypeParam
   user: {
     id: string;
   } | null;
 }
-
 
 const ChooseGamePage: React.FC<ChooseGamePageProps> = ({ onNavigate, user }) => {
   const [pressedGame, setPressedGame] = useState<string | null>(null);
@@ -22,18 +22,27 @@ const ChooseGamePage: React.FC<ChooseGamePageProps> = ({ onNavigate, user }) => 
     setPressedGame(gameName);
   };
 
+  const handleNext = () => {
+    // Navigate to the next page with gameType if available
+    if (pressedGame) {
+      onNavigate('choose-category', pressedGame);
+    } else {
+      onNavigate('choose-category', undefined);
+    }
+  };
+
   const games = [
-    { name: 'Guess Who', icon: <GuessWhoIcon width='100%' height='100%'/> },
-    { name: 'Hot Seat', icon: <HotSeatIcon width='100%' height='100%'/> },
-    { name: 'Trivia', icon: <TriviaIcon width='100%' height='100%'/> },
-    { name: 'Who’s that face?', icon: <WhosThatFace width='100%' height='100%'/> },
-    { name: 'Most likely', icon: <GuessWhoIcon width='100%' height='100%' /> }
+    { name: 'GuessWho', icon: <GuessWhoIcon width='100%' height='100%' /> },
+    { name: 'HotSeat', icon: <HotSeatIcon width='100%' height='100%' /> },
+    { name: 'Trivia', icon: <TriviaIcon width='100%' height='100%' /> },
+    { name: 'WhosThatFace', icon: <WhosThatFace width='100%' height='100%' /> },
+    { name: 'MostLikely', icon: <GuessWhoIcon width='100%' height='100%' /> }
   ];
 
   return (
     <section className="w-screen h-screen flex flex-col justify-between items-center bg-custom-purple relative overflow-auto lg:overflow-hidden">
       <h1 className="quiz_name ml-14 mt-14 flex flex-row text-center self-start text-white z-10">
-        {/* quiz.name */} Class Quiz
+        Class Quiz
       </h1>
 
       <p className="quiz_name lg:mt-2 mt-10 lg:mb-2 mb-10 self-center text-center text-white z-10">
@@ -45,7 +54,7 @@ const ChooseGamePage: React.FC<ChooseGamePageProps> = ({ onNavigate, user }) => 
           {games.map((game) => (
             <div
               key={game.name}
-              className={`game_card  border-4 flex flex-col justify-center items-center ${pressedGame === game.name ? 'border-custom-orange border-3' : 'border-white '}`}
+              className={`game_card border-4 flex flex-col justify-center items-center ${pressedGame === game.name ? 'border-custom-orange border-3' : 'border-white '}`}
               onClick={() => handlePress(game.name)}
             >
               <div className="w-40 h-40 ">
@@ -61,9 +70,11 @@ const ChooseGamePage: React.FC<ChooseGamePageProps> = ({ onNavigate, user }) => 
         <div className="absolute top-0 left-0">
           <BlueShape />
         </div>
-        <button  className={`${pressedGame ? 'orange_btn' : 'white_btn'}`}
-          disabled={!pressedGame}>
-          {/* handleClick */}
+        <button
+          className={`${pressedGame ? 'orange_btn' : 'white_btn'}`}
+          disabled={!pressedGame}
+          onClick={handleNext} // Use handleNext function for navigation
+        >
           Next
         </button>
       </div>

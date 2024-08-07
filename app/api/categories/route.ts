@@ -8,11 +8,20 @@ import Category from '@/models/category';
 // Connect to the database
 dbConnect();
 
-// Function to handle POST requests for creating a category
 export async function POST(req: NextRequest) {
   try {
     // Parse the JSON body from the request
     const body = await req.json();
+
+    console.log('Received Data:', body); // Verify questionCount is received
+
+    // Validate questionCount if necessary
+    if (typeof body.questionCount !== 'number' || body.questionCount < 0) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid question count' },
+        { status: 400 }
+      );
+    }
 
     // Create a new category with the parsed body data
     const category = await Category.create(body);

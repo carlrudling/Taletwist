@@ -1,4 +1,4 @@
-// app/api/categories/[gameType]/route.ts
+// app/api/categories/games/[gameType]/route.ts
 
 import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
@@ -11,6 +11,7 @@ dbConnect();
 // Function to handle GET requests for categories by gameType
 export async function GET(req: NextRequest, { params }: { params: { gameType: string } }) {
   const { gameType } = params; // Access the gameType from params
+  console.log('Received gameType:', gameType); // Debug: Log received gameType
 
   try {
     // Find categories where the gameType matches the given gameType

@@ -18,7 +18,7 @@ export interface IReport {
 export interface ICategory extends Document {
   name: string;
   description: string;
-  createdBy: string; // 'user' or 'taletwist'
+  createdBy: string;
   creatorId?: Types.ObjectId;
   votes?: {
     count: number;
@@ -29,80 +29,44 @@ export interface ICategory extends Document {
     name: string;
     id: Types.ObjectId;
   };
-  tags: string[]; // Define tags as an array of strings
+  tags: string[];
   reports?: IReport[];
+  questionCount: number;
   addVote: (userId: Types.ObjectId) => Promise<void>;
   hasVoted: (userId: Types.ObjectId) => boolean;
   addReport: (userId: Types.ObjectId, cause: ReportCause, comment?: string) => Promise<void>;
 }
 
+// category.ts
+
 const CategorySchema = new Schema<ICategory>({
-  name: {
-    type: String,
-    required: true,
-  },
-  description: {
-    type: String,
-  },
-  createdBy: {
-    type: String,
-    enum: ['user', 'taletwist'],
-    required: true,
-  },
-  creatorId: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-  },
+  name: { type: String, required: true },
+  description: { type: String, required: true },
+  createdBy: { type: String, enum: ['user', 'taletwist'], required: true },
+  creatorId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   votes: {
     type: {
-      count: {
-        type: Number,
-        default: 0,
-      },
-      userIds: [{
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-      }],
+      count: { type: Number, default: 0 },
+      userIds: { type: [Schema.Types.ObjectId], ref: 'User', default: [] },
     },
-    required: function() { return this.createdBy === 'user'; },
+    default: { count: 0, userIds: [] },
   },
-  isPrivate: {
-    type: Boolean,
-    default: false,
-  },
+  isPrivate: { type: Boolean, default: false },
   gameType: {
-    name: {
-      type: String,
-      enum: ['GuessWho', 'HotSeat', 'Trivia', 'MostLikely'],
-      required: true,
-    },
-    id: {
-      type: Schema.Types.ObjectId,
-      required: true,
-    },
+    name: { type: String, enum: ['GuessWho', 'HotSeat', 'Trivia', 'MostLikely'], required: true },
+    id: { type: Schema.Types.ObjectId, required: true },
   },
-  tags: {
-    type: [String], // Define tags as an array of strings
-    default: [],    // Default to an empty array
-  },
+  tags: { type: [String], default: [] },
   reports: [
     {
-      cause: {
-        type: String,
-        enum: ['Harassment', 'Hate Speech', 'Inappropriate Content', 'Spam', 'Other'],
-        required: true,
-      },
-      userId: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-      },
-      comment: {
-        type: String,
-      },
+      cause: { type: String, enum: ['Harassment', 'Hate Speech', 'Inappropriate Content', 'Spam', 'Other'], required: true },
+      userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+      comment: { type: String },
     },
   ],
+  questionCount: { type: Number, default: 0, required: true }, // Ensure this field is correctly defined
 });
+
 
 // Method to check if a user has already voted
 CategorySchema.methods.hasVoted = function(userId: Types.ObjectId): boolean {

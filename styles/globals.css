@@ -183,7 +183,7 @@ body {
 
 
  .category_card {
-     @apply p-4 w-categoryCardWidth mx-auto gap-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 bg-white;
+     @apply p-4 w-categoryCardWidth h-categoryCardHeight mx-auto gap-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 bg-white;
  }
 
  .thoughts_card {
