@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import BlueShape from '../icons/blueShape';
-import CategoryCard from '../CategoryCard'; // Import your CategoryCard component
 import SearchCategory from '../SearchCategory';
 
 // Define the Category interface
@@ -77,7 +76,7 @@ const ChooseCategoryPage: React.FC<ChooseCategoryPageProps> = ({ onNavigate, use
       </p>
 
       <SearchCategory 
-        routeEnd={gameType || 'list'} // Pass gameType or default to 'list'
+        categories={categories} // Pass fetched categories to SearchCategory
         onCategorySelect={handlePress}
       />
 
@@ -86,25 +85,13 @@ const ChooseCategoryPage: React.FC<ChooseCategoryPageProps> = ({ onNavigate, use
       {!loading && categories.length === 0 && !error && (
         <p className="text-white">No categories found.</p>
       )}
-      
-      <div className="z-10 grid grid-cols-3 gap-4 p-4">
-        {categories.map((category) => (
-          <CategoryCard
-            key={category._id}
-            category={category}
-            buttonLabel="Select"
-            onButtonClick={() => handlePress(category._id)}
-            clickable={true}
-          />
-        ))}
-      </div>
 
       <div className="mx-10 mb-10 flex flex-row justify-end self-stretch items-end">
         <div className="absolute top-0 left-0">
           <BlueShape />
         </div>
         <button
-          className={`${pressedCategory ? 'orange_btn' : 'white_btn'} absolute bottom-10 right-10`}
+          className={`${pressedCategory ? 'orange_btn' : 'white_btn'} absolute bottom-10 right-10 z-10`}
           disabled={!pressedCategory}
           onClick={() => onNavigate(`play-game?categoryId=${pressedCategory}`)} // Navigate to the next page
         >

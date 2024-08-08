@@ -1,7 +1,6 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import { FC } from 'react';
 import VotesIcon from './icons/votesIcon';
 
@@ -22,6 +21,7 @@ interface CategoryCardProps {
   onButtonClick?: () => void;
   buttonLabel?: string;
   clickable?: boolean;
+  selected?: boolean; // Add selected prop
 }
 
 const CategoryCard: FC<CategoryCardProps> = ({
@@ -29,18 +29,20 @@ const CategoryCard: FC<CategoryCardProps> = ({
   onButtonClick,
   buttonLabel = 'Select',
   clickable = true,
+  selected = false, // Default selected to false
 }) => {
-  const router = useRouter();
+
   const { data: session } = useSession();
 
-  const defaultButtonClick = () => {
-    router.push(`/edit-category?id=${category._id}`);
-  };
-
+  const defaultButtonClick = () => {};
   const handleClick = onButtonClick || defaultButtonClick;
 
   return (
-    <div className="category_card grid grid-rows-3 p-4 bg-white shadow-md rounded-lg hover:shadow-lg transition-shadow duration-300">
+    <div
+      className={`category_card grid grid-rows-3 p-4 bg-white shadow-md rounded-lg hover:shadow-lg transition-shadow duration-300 ${
+        selected ? 'border-4 border-custom-orange' : 'border-2 border-white'
+      }`}
+    >
       <div className="flex justify-between items-center mb-2">
         <h3 className="text-xl font-poppins font-bold text-black">
           {category.name}

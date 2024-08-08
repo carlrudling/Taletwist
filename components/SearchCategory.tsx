@@ -4,28 +4,37 @@ import React, { useState, useEffect, ChangeEvent, FC } from "react";
 import CategoryCard from "./CategoryCard"; // Adjust the import path as needed
 import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
 
+// Define the Category interface
 interface Category {
   _id: string;
   name: string;
-  votes: number;
+  votes: {
+    count: number;
+    userIds: string[];
+  };
   description: string;
-  tags: string[]; // Add tags to the category interface
+  tags: string[];
+  questionCount: number;
 }
 
 interface CategoryCardListProps {
   data: Category[];
   onCategorySelect: (id: string) => void;
+  pressedCategory: string | null;
+  handlePress: (id: string) => void;
 }
 
-const CategoryCardList: FC<CategoryCardListProps> = ({ data, onCategorySelect }) => {
+const CategoryCardList: FC<CategoryCardListProps> = ({ data, onCategorySelect, pressedCategory, handlePress }) => {
   return (
-    <div className='mt-16 category_layout'>
+    <div className='z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 mt-8 mx-14'>
       {data.map((category) => (
         <CategoryCard
           key={category._id}
           category={category}
-          buttonLabel='Choose Category'
-          onButtonClick={() => onCategorySelect(category._id)}
+          buttonLabel="Select"
+          onButtonClick={() => handlePress(category._id)}
+          clickable={true}
+          selected={pressedCategory === category._id} // Pass selected prop
         />
       ))}
     </div>
@@ -33,37 +42,23 @@ const CategoryCardList: FC<CategoryCardListProps> = ({ data, onCategorySelect })
 };
 
 interface SearchCategoryProps {
-  routeEnd: string;
+  categories: Category[];
   onCategorySelect: (id: string) => void;
 }
 
-const SearchCategory: FC<SearchCategoryProps> = ({ routeEnd, onCategorySelect }) => {
-  const [allCategories, setAllCategories] = useState<Category[]>([]);
+const SearchCategory: FC<SearchCategoryProps> = ({ categories, onCategorySelect }) => {
   const [searchText, setSearchText] = useState<string>("");
-  const [searchedResults, setSearchedResults] = useState<Category[]>([]);
-
-  // Function to fetch categories from the API
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch(`/api/category/${routeEnd}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch categories");
-      }
-      const data = await response.json();
-      setAllCategories(data);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-    }
-  };
+  const [searchedResults, setSearchedResults] = useState<Category[]>(categories);
+  const [pressedCategory, setPressedCategory] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchCategories();
-  }, [routeEnd]); // Include routeEnd as a dependency to refetch if it changes
+    setSearchedResults(categories.sort((a, b) => b.votes.count - a.votes.count)); // Sort categories by votes by default
+  }, [categories]);
 
   // Function to filter categories based on search text
-  const filterCategories = (searchtext: string): Category[] => {
-    const regex = new RegExp(searchtext, "i"); // 'i' flag for case-insensitive search
-    return allCategories.filter(
+  const filterCategories = (searchText: string): Category[] => {
+    const regex = new RegExp(searchText, "i"); // 'i' flag for case-insensitive search
+    return categories.filter(
       (category) =>
         regex.test(category.name) || 
         regex.test(category.description) || 
@@ -77,16 +72,22 @@ const SearchCategory: FC<SearchCategoryProps> = ({ routeEnd, onCategorySelect })
     setSearchText(searchValue);
 
     if (!searchValue) {
-      setSearchedResults([]);
+      setSearchedResults(categories.sort((a, b) => b.votes.count - a.votes.count)); // Sort categories by votes if no search text
     } else {
       const filteredCategories = filterCategories(searchValue);
       setSearchedResults(filteredCategories);
     }
   };
 
+  // Function to handle category selection
+  const handlePress = (categoryId: string) => {
+    setPressedCategory(categoryId);
+    onCategorySelect(categoryId);
+  };
+
   return (
-    <section className="w-full z-10 flex justify-center"> {/* Centering the section */}
-      <form className="relative flex items-center w-full max-w-md"> {/* Adding max-width */}
+    <section className="w-full z-10 flex flex-col items-center">
+      <form className="relative flex items-center w-full max-w-md mb-4">
         <div className="relative flex items-center w-full">
           <MagnifyingGlassIcon className="absolute left-3 h-5 w-5 text-gray-400" />
           <input
@@ -100,12 +101,12 @@ const SearchCategory: FC<SearchCategoryProps> = ({ routeEnd, onCategorySelect })
         </div>
       </form>
 
-      {/* Display filtered or all categories */}
-      {searchText ? (
-        <CategoryCardList data={searchedResults} onCategorySelect={onCategorySelect} />
-      ) : (
-        <CategoryCardList data={allCategories} onCategorySelect={onCategorySelect} />
-      )}
+      <CategoryCardList
+        data={searchedResults}
+        onCategorySelect={onCategorySelect}
+        pressedCategory={pressedCategory}
+        handlePress={handlePress}
+      />
     </section>
   );
 };
