@@ -1,15 +1,20 @@
 'use client';
 
 import { useState, FormEvent, ChangeEvent } from 'react';
-import { useRouter } from 'next/navigation';
 import { useQuizContext } from '@/app/provider/QuizProvider';
+import { Socket } from 'socket.io-client';
 
-const SearchQuiz = () => {
+
+interface SearchQuizProps {
+  socket: Socket | null;  // Add socket as a prop
+  onNavigate: (page: string) => void;
+}
+
+const SearchQuiz: React.FC<SearchQuizProps> = ({ socket, onNavigate }) => {
   const [quizCode, setQuizCode] = useState<string>('');
   const [playerName, setPlayerName] = useState<string>('');
   const [message, setMessage] = useState<string>('');
   const { setSelectedQuiz } = useQuizContext();
-  const router = useRouter();
 
   const handleJoinQuiz = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -45,10 +50,24 @@ const SearchQuiz = () => {
       const quizData = await addPlayerResponse.json();
       console.log('Joined quiz successfully:', quizData);
 
+
       setMessage('Joined quiz successfully!');
       setSelectedQuiz(quizData.data); // Set the selected quiz in the context
 
-      router.push('/join'); // Navigate to the join page or any other desired page
+
+
+if (socket && socket.connected) {
+  console.log('Socket is connected, emitting joinRoom');
+  socket.emit('joinRoom', quizCode);
+   onNavigate('joinQuizResponse')
+} else {
+  console.log('Socket not connected');
+}
+
+
+     
+       
+
     } catch (error) {
       console.error('Failed to join quiz:', (error as Error).message);
       setMessage((error as Error).message);

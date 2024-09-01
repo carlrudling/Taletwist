@@ -7,6 +7,8 @@ import GuessWhoIcon from '../icons/guessWhoIcon';
 import HotSeatIcon from '../icons/hotSeatIcon';
 import WhosThatFace from '../icons/whosthatface';
 import TriviaIcon from '../icons/triviaIcon';
+import { useQuizContext } from '@/app/provider/QuizProvider';
+
 
 interface ChooseGamePageProps {
   onNavigate: (page: string, gameTypeParam?: string) => void; // Updated function signature to accept optional gameTypeParam
@@ -17,6 +19,7 @@ interface ChooseGamePageProps {
 
 const ChooseGamePage: React.FC<ChooseGamePageProps> = ({ onNavigate, user }) => {
   const [pressedGame, setPressedGame] = useState<string | null>(null);
+  const { selectedQuiz } = useQuizContext();
 
   const handlePress = (gameName: string) => {
     setPressedGame(gameName);
@@ -42,7 +45,7 @@ const ChooseGamePage: React.FC<ChooseGamePageProps> = ({ onNavigate, user }) => 
   return (
     <section className="w-screen h-screen flex flex-col justify-between items-center bg-custom-purple relative overflow-auto lg:overflow-hidden">
       <h1 className="quiz_name ml-14 mt-14 flex flex-row text-center self-start text-white z-10">
-        Class Quiz
+        {selectedQuiz?.name ?? 'null'}
       </h1>
 
       <p className="quiz_name lg:mt-2 mt-10 lg:mb-2 mb-10 self-center text-center text-white z-10">

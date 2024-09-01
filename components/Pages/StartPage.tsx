@@ -11,15 +11,18 @@ import Star from '../icons/star';
 import QuizCard from '../QuizCard';
 import Thoughtsform from '../Thoughtsform';
 import { useQuizContext } from '@/app/provider/QuizProvider';
+import { Socket } from 'socket.io-client';  // Import the Socket type
+
 
 interface StartPageProps {
   onNavigate: (page: string) => void;
   user: {
     id: string;
   } | null;
+  socket: Socket | null;  // Add socket as a prop
 }
 
-const StartPage: React.FC<StartPageProps> = ({ onNavigate, user }) => {
+const StartPage: React.FC<StartPageProps> = ({ onNavigate, user, socket }) => { // Use socket prop here
   const [isVisible, setIsVisible] = useState(false);
   const { data: session, status } = useSession();
   const [quizzes, setQuizzes] = useState<any[]>([]);
@@ -103,7 +106,7 @@ const StartPage: React.FC<StartPageProps> = ({ onNavigate, user }) => {
         like <span className="font-bold">Guess Who</span> and{' '}
         <span className="font-bold">🔥Hot Seat🔥</span>
       </p>
-      <SearchQuiz />
+      <SearchQuiz socket={socket} onNavigate={onNavigate}/>
 
       {/* Display loading, error, or quizzes */}
       <div className="z-20 mt-8 w-full flex flex-col lg:flex-row items-center justify-center">

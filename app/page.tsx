@@ -1,5 +1,5 @@
 import React from 'react'
-import GameLogic from '@/components/GameLogic.tsx/GameLogic'
+import GameLogic from '@/components/GameLogic/GameLogic'
 import JoinPage from '@/components/Pages/JoinPage'
 import ChooseCategoryPage from '@/components/Pages/ChooseCategoryPage'
 import ChooseGamePage from '@/components/Pages/ChooseGamePage'

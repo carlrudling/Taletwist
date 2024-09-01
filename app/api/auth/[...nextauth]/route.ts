@@ -2,6 +2,7 @@
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 
+import { ObjectId } from 'mongoose'; // Import ObjectId type if needed
 import User, { IUser } from '@/models/user';  // Import IUser correctly
 import dbConnect from '@/utils/database';
 
@@ -39,10 +40,12 @@ const options: NextAuthOptions = {
       if (session.user?.email) {
         await dbConnect();
 
+        // Find the user and cast it as IUser
         const sessionUser = await User.findOne({ email: session.user.email }) as IUser | null;
 
         if (sessionUser) {
-          session.user.id = sessionUser._id.toString();
+          // Ensure that _id is recognized as an ObjectId and convert it to string
+          session.user.id = (sessionUser._id as ObjectId).toString();
         }
       }
       return session;
