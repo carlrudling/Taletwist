@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import io, { Socket } from 'socket.io-client';
 import StartPage from '../Pages/StartPage';
@@ -18,6 +18,10 @@ import LoadingPage from '../Pages/LoadingPage';
 import QuestionAnswerPage from '../Pages/Player/QuestionAnswerPage';
 import { useQuizContext } from '@/app/provider/QuizProvider';
 import { IGameStatement } from '@/utils/IGameStatement';
+import QuizQuestionPage from '../Pages/QuizQuestionPage';
+import QuestionGuessPage from '../Pages/Player/QuestionGuessPage';
+import AnswerResponsePage from '../Pages/AnswerResponsePage';
+import AnswerToSlowPage from '../Pages/Player/AnswerToSlowPage';
 
 
 // Define the shape of the user data
@@ -36,8 +40,13 @@ const GameLogic: React.FC = () => {
   const [quiz, setQuiz] = useState<IQuiz | null>(null);  // Define the state to hold a quiz
   const [category, setCategory] = useState<ICategory | null>(null);
   const [questions, setQuestions] = useState<IGameStatement[]>([]);  // State to hold questions for the game
+  const [finalStatements, setFinalStatements] = useState<IGameStatement[]>([]); // State to hold final statements
   const { selectedQuiz } = useQuizContext();  // Get the selected quiz from context
-  const [playerName, setPlayerName] = useState();
+  const [playerName, setPlayerName] = useState<string | null>(null);  // Explicitly define the type
+  const [correct, setCorrect] = useState(false);
+  const [points, setPoints] = useState(0);
+  const [currentScore, setCurrentScore] = useState(0);
+
 
 
   useEffect(() => {
@@ -65,10 +74,26 @@ const GameLogic: React.FC = () => {
       setCurrentPage('QuestionAnswerPage');  // Navigate to the QuestionAnswerPage
     });
 
+
+      newSocket.on('allStatementsReceived', (statements: IGameStatement[]) => {
+        console.log('Received all statements in GameLogic:', statements);
+        setFinalStatements(statements);
+        console.log('Navigating to QuizQuestionPage');
+        setCurrentPage('QuizQuestionPage');
+
+      });
+
+      newSocket.on('QuestionGuessPage', () => {
+        console.log('Navigating to QuestionGuessPage');
+        setCurrentPage('QuestionGuessPage');
+
+      });
+
+
       return () => {
         newSocket.disconnect();
       };
-  }, [status]);
+  }, [session, status]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -90,12 +115,25 @@ const GameLogic: React.FC = () => {
     }
   }, []);
 
+  const updateGameType = (type: string) => {
+    setGameType(type);
+  };
 
   const handleNavigate = (page: string, gameTypeParam?: string) => {
     if (typeof window !== 'undefined') {
       window.location.hash = gameTypeParam ? `${page}:${gameTypeParam}` : page;
     }
   };
+
+ const handleAnswerQuestion = (correct: boolean, points: number) => {
+  setCurrentScore(prevScore => prevScore + points); // Update the score
+};
+
+ const handlePlayerName = (name: string) => {
+  setPlayerName(name);
+  
+};
+
 
   const renderPage = () => {
   if (status === 'loading') {
@@ -104,7 +142,7 @@ const GameLogic: React.FC = () => {
 
   switch (currentPage) {
     case 'start':
-      return <StartPage onNavigate={handleNavigate} user={user} socket={socket} />;
+      return <StartPage onNavigate={handleNavigate} user={user} socket={socket} handlePlayerName={handlePlayerName}/>;
     case 'join':
       return <JoinPage onNavigate={handleNavigate} user={user} socket={socket} />;
     case 'create-quiz':
@@ -114,7 +152,7 @@ const GameLogic: React.FC = () => {
     case 'edit-subscription':
       return <SubscriptionPage onNavigate={handleNavigate} user={user} />;
     case 'chooseGame':
-      return <ChooseGamePage onNavigate={handleNavigate} user={user} />;
+      return <ChooseGamePage onNavigate={handleNavigate} user={user} setGameType={updateGameType}/>;
     case 'joinQuizResponse':
       return <JoinedQuizResponsePage onNavigate={handleNavigate} user={user} quizName={quiz?.name} />;
     case 'choose-category':
@@ -125,9 +163,17 @@ const GameLogic: React.FC = () => {
       return <LoadingPage onNavigate={handleNavigate} user={user} socket={socket} loadingText={gameType === 'GuessWho' ? 'Waiting for all Players to finsih the statements' : 'Loading, please wait...'}
 />;
     case 'QuestionAnswerPage':
-      return <QuestionAnswerPage onNavigate={handleNavigate} socket={socket} questions={questions} playerName='Carl'/>;
+      return <QuestionAnswerPage onNavigate={handleNavigate} socket={socket} questions={questions} playerName={playerName ?? ''}/>;
+      case 'QuizQuestionPage':
+        return <QuizQuestionPage statements={finalStatements} socket={socket}/>;
+      case 'QuestionGuessPage':
+        return <QuestionGuessPage socket={socket} onNavigate={handleNavigate} handleAnswerQuestion={handleAnswerQuestion}/>
+      case 'AnswerResponsePage':
+        return <AnswerResponsePage correct={correct} points={points} currentScore={currentScore}/>
+        case 'AnswerToSlow':
+          return <AnswerToSlowPage currentScore={currentScore} />
     default:
-      return <StartPage onNavigate={handleNavigate} user={user} socket={socket} />;
+      return <StartPage onNavigate={handleNavigate} user={user} socket={socket} handlePlayerName={handlePlayerName}/>;
   }
 };
 

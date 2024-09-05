@@ -20,9 +20,11 @@ interface StartPageProps {
     id: string;
   } | null;
   socket: Socket | null;  // Add socket as a prop
+  handlePlayerName: (playerName: string) => void;
+
 }
 
-const StartPage: React.FC<StartPageProps> = ({ onNavigate, user, socket }) => { // Use socket prop here
+const StartPage: React.FC<StartPageProps> = ({ onNavigate, user, socket, handlePlayerName }) => { // Use socket prop here
   const [isVisible, setIsVisible] = useState(false);
   const { data: session, status } = useSession();
   const [quizzes, setQuizzes] = useState<any[]>([]);
@@ -41,6 +43,24 @@ const StartPage: React.FC<StartPageProps> = ({ onNavigate, user, socket }) => { 
   const handleClickOutside = (event: MouseEvent) => {
     if (formRef.current && !formRef.current.contains(event.target as Node)) {
       setThoughtsField(false);
+    }
+  };
+
+   const handleQuizSelect = (quiz: any) => {
+    if (user && socket) {
+      const role = 'creator';
+      socket.emit('joinRoom', { roomId: quiz.joinCode, role }, (response: any) => {
+        if (response.success) {
+          setSelectedQuiz(quiz); // Set the selected quiz in context
+          onNavigate('join'); // Navigate to the join page
+        } else {
+          console.error('Failed to join room as creator:', response.message);
+          // Optionally, show an error message to the user
+        }
+      });
+    } else {
+      // If the user is not logged in or socket is not available
+      console.error('User or socket not available');
     }
   };
 
@@ -106,24 +126,19 @@ const StartPage: React.FC<StartPageProps> = ({ onNavigate, user, socket }) => { 
         like <span className="font-bold">Guess Who</span> and{' '}
         <span className="font-bold">🔥Hot Seat🔥</span>
       </p>
-      <SearchQuiz socket={socket} onNavigate={onNavigate}/>
+      <SearchQuiz socket={socket} onNavigate={onNavigate} user={user} handlePlayerName={handlePlayerName}/>
 
       {/* Display loading, error, or quizzes */}
       <div className="z-20 mt-8 w-full flex flex-col lg:flex-row items-center justify-center">
         {loading && <p className="text-white">Loading quizzes...</p>}
         {error && <p className="text-red-500">{error}</p>}
-        {!loading && quizzes.length === 0 && !error && (
-          <p className="text-white">No quizzes found.</p>
-        )}
         {quizzes.map((quiz) => (
           <QuizCard
             key={quiz._id}
             quiz={quiz}
             buttonLabel="Select"
-            onNavigate={() => {
-              setSelectedQuiz(quiz); // Set the selected quiz in context
-              onNavigate('join'); // Navigate to the join page
-            }}
+            onNavigate={() => handleQuizSelect(quiz)}
+
           />
         ))}
       </div>

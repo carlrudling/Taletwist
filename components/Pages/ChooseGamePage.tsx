@@ -15,14 +15,18 @@ interface ChooseGamePageProps {
   user: {
     id: string;
   } | null;
+    setGameType: (type: string) => void; // New prop to accept the setGameType function
+
 }
 
-const ChooseGamePage: React.FC<ChooseGamePageProps> = ({ onNavigate, user }) => {
+const ChooseGamePage: React.FC<ChooseGamePageProps> = ({ onNavigate, user, setGameType }) => {
   const [pressedGame, setPressedGame] = useState<string | null>(null);
   const { selectedQuiz } = useQuizContext();
 
   const handlePress = (gameName: string) => {
     setPressedGame(gameName);
+    setGameType(gameName); // Set the game type when a game is selected
+
   };
 
   const handleNext = () => {
@@ -30,7 +34,7 @@ const ChooseGamePage: React.FC<ChooseGamePageProps> = ({ onNavigate, user }) => 
     if (pressedGame) {
       onNavigate('choose-category', pressedGame);
     } else {
-      onNavigate('choose-category', undefined);
+      onNavigate('choose-category');
     }
   };
 

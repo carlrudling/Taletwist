@@ -8,9 +8,13 @@ import { Socket } from 'socket.io-client';
 interface SearchQuizProps {
   socket: Socket | null;  // Add socket as a prop
   onNavigate: (page: string) => void;
+   user: {
+    id: string;
+  } | null;
+  handlePlayerName: (playerName: string) => void;
 }
 
-const SearchQuiz: React.FC<SearchQuizProps> = ({ socket, onNavigate }) => {
+const SearchQuiz: React.FC<SearchQuizProps> = ({ socket, onNavigate, user, handlePlayerName }) => {
   const [quizCode, setQuizCode] = useState<string>('');
   const [playerName, setPlayerName] = useState<string>('');
   const [message, setMessage] = useState<string>('');
@@ -58,15 +62,24 @@ const SearchQuiz: React.FC<SearchQuizProps> = ({ socket, onNavigate }) => {
 
 if (socket && socket.connected) {
   console.log('Socket is connected, emitting joinRoom');
-  socket.emit('joinRoom', quizCode);
-   onNavigate('joinQuizResponse')
-} else {
-  console.log('Socket not connected');
-}
 
+  // Assuming `role` is a variable that holds either 'creator' or 'player'
+  const role = 'player'; // Example logic, adjust as needed
 
-     
-       
+ socket.emit('joinRoom', { roomId: quizCode, role }, (response: any) => {
+          if (response.success) {
+            console.log('Successfully joined the room as player');
+            handlePlayerName(playerName);
+            onNavigate('joinQuizResponse');
+          } else {
+            console.error('Failed to join room as player:', response.message);
+            setMessage('Failed to join the room. Please try again.');
+          }
+        });
+      } else {
+        console.log('Socket not connected');
+        setMessage('Unable to connect to the server. Please try again.');
+      }
 
     } catch (error) {
       console.error('Failed to join quiz:', (error as Error).message);
@@ -110,7 +123,7 @@ if (socket && socket.connected) {
           Join
         </button>
       </form>
-      {message && <p>{message}</p>}
+      {message && <p className='text-red-500'>{message}</p>}
     </section>
   );
 };

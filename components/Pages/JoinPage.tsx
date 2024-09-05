@@ -13,27 +13,46 @@ interface JoinPageProps {
   socket: Socket | null;  // Accept socket as a prop
 }
 
+interface Player {
+  _id: string;
+  id: string;
+  name: string;
+  score: number; // Ingen undefined
+  wins: number;  // Ingen undefined
+}
+
+
 const JoinPage: React.FC<JoinPageProps> = ({ onNavigate, user, socket }) => {
   const { selectedQuiz } = useQuizContext();
   const [currentPage, setCurrentPage] = useState(0);
   const playersPerPage = 18;
 
-  const players = selectedQuiz?.players || [];
+  const [players, setPlayers] = useState(selectedQuiz?.players || []);
 
-  useEffect(() => {
-    if (socket) {
-      // Listen for the 'userJoined' event from the server
-      socket.on('userJoined', (message) => {
-        console.log('New user joined:', message);
-        // Optionally, update state or UI based on the new user
-      });
+ useEffect(() => {
+  if (socket) {
+    // Lyssna på 'userJoined' händelsen från servern
+    socket.on('userJoined', ({ userId, role }) => {
+      console.log('Ny användare ansluten:', userId, role);
 
-      // Cleanup the listener when the component unmounts
-      return () => {
-        socket.off('userJoined');
+      const newPlayer: Player = {
+        _id: userId,  // Använd userId som ett temporärt _id
+        id: userId,   // Använd userId för id
+        name: `Player ${players.length + 1}`,  // Justera namnlogik efter behov
+        score: 0,  // Standardpoäng
+        wins: 0,   // Standardvinster
       };
-    }
-  }, [socket]);
+
+      setPlayers((prevPlayers) => [...prevPlayers, newPlayer]);
+    });
+
+    // Städa upp lyssnaren när komponenten avmonteras
+    return () => {
+      socket.off('userJoined');
+    };
+  }
+}, [socket, players.length]);
+
 
   const handleButtonClick = () => {
     onNavigate('chooseGame');
