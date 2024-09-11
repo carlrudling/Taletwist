@@ -22,6 +22,8 @@ import QuizQuestionPage from '../Pages/QuizQuestionPage';
 import QuestionGuessPage from '../Pages/Player/QuestionGuessPage';
 import AnswerResponsePage from '../Pages/AnswerResponsePage';
 import AnswerToSlowPage from '../Pages/Player/AnswerToSlowPage';
+import QuizRankingPage from '../Pages/QuizRankingPage';
+import QuizStatsPage from '../Pages/QuizStatsPage';
 
 
 // Define the shape of the user data
@@ -30,6 +32,25 @@ interface User {
   email: string;
   name: string;
 }
+
+
+interface PlayerRanking {
+  name: string;
+  score: number;
+  icon: string; // 🔥 for correct, 🥶 for incorrect
+}
+
+interface PlayerResponse {
+  playerId: string;
+  playerName?: string; // Player name is optional (only for players)
+  currentScore: number;
+  correct: boolean;
+  answer?: string;      // Optional answer string
+  position?: string;    // Add the position field to track the answer position
+}
+
+
+
 
 const GameLogic: React.FC = () => {
   const { data: session, status } = useSession();
@@ -46,6 +67,9 @@ const GameLogic: React.FC = () => {
   const [correct, setCorrect] = useState(false);
   const [points, setPoints] = useState(0);
   const [currentScore, setCurrentScore] = useState(0);
+  const [rankings, setRankings] = useState<PlayerRanking[]>([]);  // Add state to store rankings
+  const [statsData, setStatsData] = useState<{ answer: string; votes: number; position: string }[]>([]); // Initialize with an empty array
+
 
 
 
@@ -89,6 +113,47 @@ const GameLogic: React.FC = () => {
 
       });
 
+          // Listen for the 'allPlayersAnswered' event for rankings
+newSocket.on('allPlayersAnswered', (roomResponses: PlayerResponse[]) => {
+  console.log('Received allPlayersAnswered:', roomResponses);
+
+  // Process responses for stats
+  const voteCount: { [key: string]: { votes: number, position: string } } = {};  // Store both votes and position
+
+  roomResponses.forEach((response: PlayerResponse) => {
+    if (response.answer && response.position) {
+      if (!voteCount[response.answer]) {
+        voteCount[response.answer] = { votes: 0, position: response.position };
+      }
+      voteCount[response.answer].votes += 1;
+    }
+  });
+
+  // Convert voteCount object into the required array format with { answer, votes, position }
+  const statsDataArray = Object.keys(voteCount).map((answer) => ({
+    answer,
+    votes: voteCount[answer].votes,
+    position: voteCount[answer].position,
+  }));
+
+  setStatsData(statsDataArray);  // Save the stats data for use in QuizStatsPage
+
+  // Map the room responses to the ranking format
+  const updatedRankings: PlayerRanking[] = roomResponses
+    .map((response: PlayerResponse) => ({
+      name: response.playerName || 'Unknown',
+      score: response.currentScore,
+      icon: response.correct ? '🔥' : '🥶',
+    }))
+    .sort((a: PlayerRanking, b: PlayerRanking) => b.score - a.score)
+    .slice(0, 5); // Take only the top 5 players
+
+  console.log('Updated rankings:', updatedRankings);
+  setRankings(updatedRankings);  // Set the rankings state
+});
+
+
+
 
       return () => {
         newSocket.disconnect();
@@ -127,7 +192,10 @@ const GameLogic: React.FC = () => {
 
  const handleAnswerQuestion = (correct: boolean, points: number) => {
   setCurrentScore(prevScore => prevScore + points); // Update the score
+  setCorrect(correct);  // Store whether the answer was correct
+  setPoints(points);    // Store the points earned
 };
+
 
  const handlePlayerName = (name: string) => {
   setPlayerName(name);
@@ -165,13 +233,17 @@ const GameLogic: React.FC = () => {
     case 'QuestionAnswerPage':
       return <QuestionAnswerPage onNavigate={handleNavigate} socket={socket} questions={questions} playerName={playerName ?? ''}/>;
       case 'QuizQuestionPage':
-        return <QuizQuestionPage statements={finalStatements} socket={socket}/>;
+        return <QuizQuestionPage statements={finalStatements} socket={socket} onNavigate={handleNavigate}/>;
       case 'QuestionGuessPage':
         return <QuestionGuessPage socket={socket} onNavigate={handleNavigate} handleAnswerQuestion={handleAnswerQuestion}/>
       case 'AnswerResponsePage':
         return <AnswerResponsePage correct={correct} points={points} currentScore={currentScore}/>
         case 'AnswerToSlow':
           return <AnswerToSlowPage currentScore={currentScore} />
+          case 'quizRankingPage':
+        return <QuizRankingPage rankings={rankings}/>;  // Pass rankings as a prop
+        case 'quizStatsPage': 
+      return <QuizStatsPage statsData={statsData} onNavigate={handleNavigate}/>;
     default:
       return <StartPage onNavigate={handleNavigate} user={user} socket={socket} handlePlayerName={handlePlayerName}/>;
   }

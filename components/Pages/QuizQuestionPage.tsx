@@ -9,6 +9,8 @@ import { Socket } from 'socket.io-client';  // Import Socket type
 interface QuizQuestionPageProps {
   statements: IGameStatement[];
   socket: Socket | null; // Pass socket as a prop
+  onNavigate: (page: string) => void; // Pass onNavigate for page navigation
+
 }
 
 interface QuestionOptions {
@@ -22,7 +24,7 @@ interface QuestionOptions {
   };
 }
 
-const QuizQuestionPage: React.FC<QuizQuestionPageProps> = ({ statements, socket }) => {    
+const QuizQuestionPage: React.FC<QuizQuestionPageProps> = ({ statements, socket, onNavigate }) => {    
   const { selectedQuiz } = useQuizContext();
   const [playerOptions, setPlayerOptions] = useState<string[]>([]);
   const [showCorrectAnswer, setShowCorrectAnswer] = useState(false); // To control when to show the correct answer
@@ -45,6 +47,16 @@ const QuizQuestionPage: React.FC<QuizQuestionPageProps> = ({ statements, socket 
 
   return () => clearInterval(countdown); // Cleanup on unmount
 }, [timer, socket]);
+
+  useEffect(() => {
+    if (showCorrectAnswer) {
+      const navigateTimer = setTimeout(() => {
+        onNavigate('quizStatsPage'); // Navigate to quizRankingPage after 5 seconds
+      }, 5000); // 5-second delay
+
+      return () => clearTimeout(navigateTimer); // Cleanup the second timer on unmount
+    }
+  }, [showCorrectAnswer, onNavigate]);
 
 
   useEffect(() => {

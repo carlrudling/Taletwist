@@ -60,17 +60,15 @@ const SearchQuiz: React.FC<SearchQuizProps> = ({ socket, onNavigate, user, handl
 
 
 
-if (socket && socket.connected) {
-  console.log('Socket is connected, emitting joinRoom');
+    if (socket && socket.connected) {
+        console.log('Socket is connected, emitting joinRoom');
 
-  // Assuming `role` is a variable that holds either 'creator' or 'player'
-  const role = 'player'; // Example logic, adjust as needed
-
- socket.emit('joinRoom', { roomId: quizCode, role }, (response: any) => {
+        const role = 'player'; // Since this is a player joining
+        socket.emit('joinRoom', { roomId: quizCode, role, name: playerName }, (response: any) => {
           if (response.success) {
             console.log('Successfully joined the room as player');
-            handlePlayerName(playerName);
-            onNavigate('joinQuizResponse');
+            handlePlayerName(playerName); // Set player name globally if necessary
+            onNavigate('joinQuizResponse'); // Navigate to the next page
           } else {
             console.error('Failed to join room as player:', response.message);
             setMessage('Failed to join the room. Please try again.');
@@ -89,6 +87,7 @@ if (socket && socket.connected) {
     setQuizCode('');
     setPlayerName('');
   };
+
 
   const handlePlayerNameChange = (event: ChangeEvent<HTMLInputElement>) => {
     setPlayerName(event.target.value);

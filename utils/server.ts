@@ -21,9 +21,13 @@ interface RoomData {
 
 interface PlayerResponse {
   playerId: string;
+  playerName?: string; // Player name is optional (only for players)
   currentScore: number;
   correct: boolean;
+  answer?: string;      // Optional answer string
+  position?: string;    // Add the position field to track the answer position
 }
+
 
 
 // Object to track completed statements for each room
@@ -37,9 +41,8 @@ io.on('connection', (socket: Socket) => {
   console.log('User connected:', socket.id);
 
   // Handle joining a room
-   // Handle joining a room
-  socket.on('joinRoom', ({ roomId, role }: { roomId: string, role: 'creator' | 'player' }, callback) => {
-    const existingCreator = Array.from(io.sockets.adapter.rooms.get(roomId) || []).find(socketId => {
+socket.on('joinRoom', ({ roomId, role, name }: { roomId: string, role: 'creator' | 'player', name?: string }, callback) => {
+  const existingCreator = Array.from(io.sockets.adapter.rooms.get(roomId) || []).find(socketId => {
     const socketInRoom = io.sockets.sockets.get(socketId);
     return socketInRoom?.data.role === 'creator';
   });
@@ -52,20 +55,24 @@ io.on('connection', (socket: Socket) => {
 
   socket.join(roomId);
   socket.data.role = role;
-  console.log(`${role} with ID: ${socket.id} joined room: ${roomId}`);
 
+  // Store player's name only if the role is 'player'
   if (role === 'player') {
+    socket.data.name = name;
+    console.log(`Player with ID: ${socket.id} and Name: ${name} joined room: ${roomId}`);
     if (!roomData[roomId]) {
       roomData[roomId] = { players: [], playerCount: 0 };
     }
     roomData[roomId].players.push(socket.id);
+    
     roomData[roomId].playerCount += 1;
+  } else {
+    console.log(`Creator with ID: ${socket.id} joined room: ${roomId}`);
   }
 
-  io.to(roomId).emit('userJoined', { userId: socket.id, role });
+  io.to(roomId).emit('userJoined', { userId: socket.id, role, name: role === 'player' ? name : null }); // Include name only for players
   callback({ success: true });
 });
-
 
 
 //--------------------------------------------------------------------
@@ -73,36 +80,44 @@ io.on('connection', (socket: Socket) => {
 //--------------------------------------------------------------------
 
  // Handle starting Guess Who game
-  socket.on('startGuessWhoGame', ({ roomId, questions }: { roomId: string, questions: IGameStatement[] }) => {
-    if (socket.data.role !== 'creator') {
-      console.log('Only the creator can start the game');
-      return;
-    }
+socket.on('startGuessWhoGame', ({ roomId, questions }: { roomId: string, questions: IGameStatement[] }) => {
+  if (socket.data.role !== 'creator') {
+    console.log('Only the creator can start the game');
+    return;
+  }
 
-    console.log(`Starting Guess Who game in room ${roomId}`);
+  console.log(`Starting Guess Who game in room ${roomId}`);
 
-    if (!Array.isArray(questions)) {
-      console.error('Received questions is not an array:', questions);
-      return;
-    }
+  if (!Array.isArray(questions)) {
+    console.error('Received questions is not an array:', questions);
+    return;
+  }
 
-    // Shuffle the questions array to randomize question assignment
-    const shuffledQuestions = questions.sort(() => Math.random() - 0.5);
+  const players = roomData[roomId]?.players || [];
+  const numPlayers = players.length;
+  const totalQuestionsNeeded = numPlayers * 3; // Each player needs 3 questions
 
-    // Get the list of players (excluding the creator)
-    const players = roomData[roomId]?.players || [];
+  let questionPool = [...questions]; // Create a pool of questions
 
-    // Assign 3 unique questions to each player
-    players.forEach((playerSocketId, index) => {
-      const playerQuestions = shuffledQuestions.slice(index * 3, index * 3 + 3);
-      io.to(playerSocketId).emit('startGuessWhoGame', playerQuestions);
-    });
+  // Duplicate questions if there are not enough
+  while (questionPool.length < totalQuestionsNeeded) {
+    const extraQuestions = [...questions]; // Duplicate the original questions
+    questionPool = questionPool.concat(extraQuestions);
+  }
+
+  // Shuffle the question pool to randomize assignment
+  const shuffledQuestions = questionPool.sort(() => Math.random() - 0.5);
+
+  // Assign 3 questions to each player
+  players.forEach((playerSocketId, index) => {
+    const start = index * 3;
+    const playerQuestions = shuffledQuestions.slice(start, start + 3);
+    io.to(playerSocketId).emit('startGuessWhoGame', playerQuestions);
   });
+});
 
-
-
-  // Handle receiving completed answers
- socket.on('submitGuessWhoAnswers', (completedStatement: IGameStatement) => {
+// Handle receiving completed answers
+socket.on('submitGuessWhoAnswers', (completedStatement: IGameStatement) => {
   console.log('Received completed statement:', completedStatement);
 
   const roomId = Array.from(socket.rooms).find(room => room !== socket.id); // Get the room ID
@@ -118,7 +133,7 @@ io.on('connection', (socket: Socket) => {
   // Add the received statement to the room's array of statements
   roomStatements[roomId].push(completedStatement);
 
-  const totalExpectedStatements = roomData[roomId]?.playerCount * 3;
+  const totalExpectedStatements = roomData[roomId]?.playerCount * 3; // Adjusted to account for the number of players
 
   // Check if all statements have been received
   if (roomStatements[roomId].length === totalExpectedStatements) {
@@ -135,7 +150,8 @@ io.on('connection', (socket: Socket) => {
       io.to(creatorSocketId).emit('allStatementsReceived', roomStatements[roomId]);
     }
 
-      Array.from(io.sockets.adapter.rooms.get(roomId) || []).forEach(socketId => {
+    // Notify all players to move to the next page (QuestionGuessPage)
+    Array.from(io.sockets.adapter.rooms.get(roomId) || []).forEach(socketId => {
       const playerSocket = io.sockets.sockets.get(socketId);
       if (playerSocket && playerSocket.data.role === 'player') {
         io.to(socketId).emit('QuestionGuessPage');
@@ -175,35 +191,74 @@ socket.on('newQuestion', (newQuestion) => {
 
   // Emit the new question to all players in the room
   roomPlayers.forEach(playerSocketId => {
-    io.to(playerSocketId).emit('newQuestion', newQuestion);
-    console.log(`Emitting newQuestion to player: ${playerSocketId}`);
+    // Modify the emitted event to include the color mapping
+    const questionData = {
+      statement: newQuestion.statement,
+      correctAnswer: newQuestion.correctAnswer,
+      options: newQuestion.options,   // Randomized options
+      colorMapping: newQuestion.colors // Pass the color mapping for each answer
+    };
+
+    io.to(playerSocketId).emit('newQuestion', questionData);
+    console.log(`Emitting newQuestion with colors to player: ${playerSocketId}`);
   });
 });
 
 
+
 // Listen for the 'currentScore' event
-  socket.on('currentScore', ({ currentScore, correct }) => {
-    console.log(`Player ${socket.id} has a score of ${currentScore} and answered ${correct ? 'correctly' : 'incorrectly'}`);
-    
-    const roomId = Array.from(socket.rooms).find(room => room !== socket.id); // Find the room
-    
-    if (!roomId) return;
+// Listen for the 'currentScore' event
+socket.on('currentScore', ({ currentScore, correct, answer, position }) => {
+  console.log(`Player ${socket.id} has a score of ${currentScore}, answered ${answer} at position ${position}, and was ${correct ? 'correct' : 'incorrect'}`);
 
-    // Store the player's response
-    roomResponses[roomId] = roomResponses[roomId].filter(r => r.playerId !== socket.id); // Remove previous entry if exists
-    roomResponses[roomId].push({ playerId: socket.id, currentScore, correct });
+  const roomId = Array.from(socket.rooms).find(room => room !== socket.id); // Find the room
 
-    // Check if all players in the room have responded
-    if (roomResponses[roomId].length === playerCounts[roomId]) {
-      console.log(`All players have responded in room ${roomId}`);
-      
-      // Emit the collected responses to everyone in the room (including the creator and all players)
-      io.in(roomId).emit('allPlayersAnswered', roomResponses[roomId]);
-      
-      // Optionally, clear roomResponses for the next question
-      roomResponses[roomId] = [];
-    }
-  });
+  if (!roomId) {
+    console.log('No room found for the player.');
+    return;
+  }
+  console.log(`Room ID: ${roomId}`);
+
+  // Initialize roomResponses[roomId] as an empty array if it doesn't exist
+  if (!roomResponses[roomId]) {
+    roomResponses[roomId] = [];
+  }
+
+  // Get player's name (assuming it's stored in socket.data)
+  const playerName = socket.data.name || 'Unknown';
+  console.log(`Player name: ${playerName}`);
+
+  // Store the player's response, including the answer position
+  roomResponses[roomId] = roomResponses[roomId].filter(r => r.playerId !== socket.id); // Remove previous entry if exists
+  roomResponses[roomId].push({ playerId: socket.id, playerName, currentScore, correct, answer, position }); // Include the answer and position
+
+  console.log(`Updated roomResponses for ${roomId}:`, roomResponses[roomId]);
+
+  // Check if all players (not the creator) have responded
+  const totalPlayersInRoom = Array.from(io.sockets.adapter.rooms.get(roomId) || []).filter(socketId => {
+    const socketInRoom = io.sockets.sockets.get(socketId);
+    return socketInRoom?.data.role === 'player';  // Only count players
+  }).length;
+
+  console.log(`Player count in room ${roomId}: ${totalPlayersInRoom}`);
+  console.log(`Responses received: ${roomResponses[roomId].length}`);
+
+  // If all players have responded
+  if (roomResponses[roomId].length === totalPlayersInRoom) {
+    console.log(`All players have responded in room ${roomId}`);
+
+    // Emit the collected responses to everyone in the room (including the creator and all players)
+    io.in(roomId).emit('allPlayersAnswered', roomResponses[roomId]);
+
+    // Optionally, clear roomResponses for the next question
+    roomResponses[roomId] = [];
+  }
+});
+
+
+
+
+
 
 
   socket.on('timeUp', () => {

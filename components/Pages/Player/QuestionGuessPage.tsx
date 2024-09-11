@@ -29,13 +29,17 @@ const QuestionGuessPage: React.FC<QuestionGuessPageProps> = ({ socket, onNavigat
 
 
 
-  useEffect(() => {
+ useEffect(() => {
     if (socket && socket.connected) {
       // Listen for the "timeUp" event
       socket.on('timeUp', () => {
         console.log('Time is up!');
         setIsTimeUp(true); // Update local state when time is up
         handleAnswerQuestion(false, 0); // No points for incorrect answers
+        // Emit currentScore when the time is up (too late)
+       if (socket) {
+          socket.emit('currentScore', { currentScore, correct: false, answer: undefined });
+        }
         onNavigate('AnswerToSlow'); // Navigate to the "AnswerTooSlow" page
       });
 
@@ -43,7 +47,7 @@ const QuestionGuessPage: React.FC<QuestionGuessPageProps> = ({ socket, onNavigat
         socket.off('timeUp'); // Clean up the event listener
       };
     }
-  }, [socket, onNavigate]);
+  }, [socket, onNavigate, currentScore]);
 
 
 
@@ -78,8 +82,7 @@ const QuestionGuessPage: React.FC<QuestionGuessPageProps> = ({ socket, onNavigat
         setTimer(1000); // Reset the timer to 1000 points
       });
 
-      // Optionally, request the current question after the socket connection
-      socket.emit('requestCurrentQuestion');
+
 
       return () => {
         socket.off('newQuestion');
@@ -90,37 +93,40 @@ const QuestionGuessPage: React.FC<QuestionGuessPageProps> = ({ socket, onNavigat
   }, [socket]);
 
   // Handle answer click
-  const handleAnswerClick = (answer: string) => {
-    setSelectedAnswer(answer);
-    setIsAnswered(true); // Stop the timer when an answer is clicked
+ const handleAnswerClick = (answer: string, position: string) => {
+  setSelectedAnswer(answer);
+  setIsAnswered(true); // Stop the timer when an answer is clicked
 
-    if (question && answer === question.correctAnswer) {
-      setIsCorrect(true);
-      const points = Math.floor(timer);
-      const newScore = currentScore + points;
-      
-      // Emit currentScore and if the answer is correct
-      if (socket) {
-        socket.emit('currentScore', { currentScore: newScore, correct: true });
-      }
-
-      setCurrentScore(newScore); // Update local score
-      handleAnswerQuestion(true, points); // Pass only correct and points
-    } else {
-      setIsCorrect(false);
-
-      // Emit currentScore and if the answer is incorrect
-      if (socket) {
-        socket.emit('currentScore', { currentScore, correct: false });
-      }
-
-      handleAnswerQuestion(false, 0); // No points for incorrect answers
+  if (question && answer === question.correctAnswer) {
+    setIsCorrect(true);
+    const points = Math.floor(timer);
+    const newScore = currentScore + points;
+    
+    // Emit currentScore, correctness, answer, and position
+    if (socket) {
+      console.log(`Emitting correct answer, score: ${newScore}, position: ${position}`);
+      socket.emit('currentScore', { currentScore: newScore, correct: true, answer, position });
     }
 
-    setTimeout(() => {
-      onNavigate('AnswerResponsePage'); // Navigate to the next page
-    }, 1000); // Delay for a short period to show feedback
-  };
+    setCurrentScore(newScore); // Update local score
+    handleAnswerQuestion(true, points); // Pass correct and points
+  } else {
+    setIsCorrect(false);
+
+    // Emit currentScore, incorrect answer, and position
+    if (socket) {
+      console.log(`Emitting incorrect answer, score: ${currentScore}, position: ${position}`);
+      socket.emit('currentScore', { currentScore, correct: false, answer, position });
+    }
+
+    handleAnswerQuestion(false, 0); // Pass incorrect and zero points
+  }
+
+  setTimeout(() => {
+    onNavigate('AnswerResponsePage'); // Navigate to the next page
+  }, 1000); // Delay for a short period to show feedback
+};
+
 
   if (!question) {
     console.log('Still waiting for the question data');
@@ -131,30 +137,31 @@ const QuestionGuessPage: React.FC<QuestionGuessPageProps> = ({ socket, onNavigat
 
   return (
     <section className="w-screen h-screen grid grid-rows-2 grid-cols-2 relative overflow-hidden">
-      <button
-        className='bg-quiz-green flex items-center justify-center text-black font-poppins font-medium text-3xl'
-        onClick={() => handleAnswerClick(question.options.leftTop)}
-      >
-        {question.options.leftTop}
-      </button>
-      <button
-        className='bg-quiz-red flex items-center justify-center text-black font-poppins font-medium text-3xl'
-        onClick={() => handleAnswerClick(question.options.rightTop)}
-      >
-        {question.options.rightTop}
-      </button>
-      <button
-        className='bg-quiz-yellow flex items-center justify-center text-black font-poppins font-medium text-3xl'
-        onClick={() => handleAnswerClick(question.options.leftBottom)}
-      >
-        {question.options.leftBottom}
-      </button>
-      <button
-        className='bg-quiz-blue flex items-center justify-center text-black font-poppins font-medium text-3xl'
-        onClick={() => handleAnswerClick(question.options.rightBottom)}
-      >
-        {question.options.rightBottom}
-      </button>
+    <button
+  className='bg-quiz-green flex items-center justify-center text-black font-poppins font-medium text-3xl'
+  onClick={() => handleAnswerClick(question.options.leftTop, 'leftTop')}
+>
+  {question.options.leftTop}
+</button>
+<button
+  className='bg-quiz-red flex items-center justify-center text-black font-poppins font-medium text-3xl'
+  onClick={() => handleAnswerClick(question.options.rightTop, 'rightTop')}
+>
+  {question.options.rightTop}
+</button>
+<button
+  className='bg-quiz-yellow flex items-center justify-center text-black font-poppins font-medium text-3xl'
+  onClick={() => handleAnswerClick(question.options.leftBottom, 'leftBottom')}
+>
+  {question.options.leftBottom}
+</button>
+<button
+  className='bg-quiz-blue flex items-center justify-center text-black font-poppins font-medium text-3xl'
+  onClick={() => handleAnswerClick(question.options.rightBottom, 'rightBottom')}
+>
+  {question.options.rightBottom}
+</button>
+
 
       {/* Display feedback if the player has selected an answer */}
       {selectedAnswer && (
