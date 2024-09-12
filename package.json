@@ -2,15 +2,14 @@
   "name": "taletwist-v.2",
   "version": "0.1.0",
   "private": true,
- "scripts": {
-  "dev": "concurrently \"next dev\" \"ts-node-dev --respawn utils/server.ts\"",
-  "build": "next build && tsc",
-  "start": "next start",
-  "lint": "next lint",
-  "serve-socket": "tsc && node dist/utils/server.js",
-  "build:server": "tsc"
-}
-,
+  "scripts": {
+    "dev": "concurrently \"next dev\" \"ts-node-dev --respawn utils/server.ts\"",
+    "build": "next build && tsc",
+    "start": "next start",
+    "lint": "next lint",
+    "serve-socket": "tsc && node dist/utils/server.js",
+    "build:server": "tsc"
+  },
   "dependencies": {
     "@headlessui/react": "^2.1.2",
     "@heroicons/react": "^2.1.5",
@@ -25,6 +24,7 @@
     "react-confetti": "^6.1.0",
     "react-dom": "^18",
     "react-transition-group": "^4.4.5",
+    "shell-quote": "^1.8.1",
     "socket.io": "^4.7.5",
     "socket.io-client": "^4.7.5"
   },

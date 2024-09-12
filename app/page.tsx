@@ -4,7 +4,8 @@ import GameLogic from '@/components/GameLogic/GameLogic'
 
 const Home = () => {
   return (
-     <GameLogic />
+
+    <GameLogic /> 
   )
 }
 

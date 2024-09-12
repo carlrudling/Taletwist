@@ -73,7 +73,7 @@ export async function DELETE(req: Request) {
     const expirationTime = new Date();
     expirationTime.setHours(expirationTime.getHours() - 5);
 
-    const result = await Quiz.deleteMany({ createdAt: { $lte: expirationTime } });
+    const result = await Quiz.deleteMany({ createdDate: { $lte: expirationTime } });
 
     return NextResponse.json(
       { success: true, message: `Deleted ${result.deletedCount} expired quizzes` },
@@ -87,3 +87,4 @@ export async function DELETE(req: Request) {
     );
   }
 }
+

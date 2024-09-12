@@ -14,8 +14,8 @@ const RootLayout: React.FC<RootLayoutProps> = ({ children }) => {
   return (
     <html lang="en">
       <Head>
-        <title>Promptopia</title>
-        <meta name="description" content="Discover & Share AI Prompts" />
+        <title>Taletwist</title>
+        <meta name="description" content="Discover & Share Stories with your Friends" />
       </Head>
       <body>
         <SessionProvider>

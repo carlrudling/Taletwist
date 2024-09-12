@@ -42,7 +42,7 @@ const QuizSchema = new Schema<IQuiz>({
   },
   createdDate: {
     type: Date,
-    default: Date.now,
+    default: Date.now, // Default to the current date
   },
   creatorId: {
     type: Schema.Types.ObjectId,

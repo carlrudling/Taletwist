@@ -11,11 +11,16 @@ interface PlayerRanking {
 
 interface QuizRankingPageProps {
   rankings: PlayerRanking[];  // Rankings passed as a prop
+  onNavigate: (page: string) => void;
+
 }
 
-const QuizRankingPage: React.FC<QuizRankingPageProps> = ({ rankings }) => {
+const QuizRankingPage: React.FC<QuizRankingPageProps> = ({ rankings, onNavigate }) => {
     const { selectedQuiz } = useQuizContext();
 
+    const handleButtonClick = () => {
+    onNavigate('quizPodiumPage');
+  };
   return (
     <section className="w-screen h-screen flex flex-col justify-between bg-custom-purple relative overflow-hidden">
       <div className="flex flex-row mx-14 mt-14 z-10 justify-between text-center">
@@ -40,7 +45,7 @@ const QuizRankingPage: React.FC<QuizRankingPageProps> = ({ rankings }) => {
       </div>
 
       <div className="z-10 mx-10 mb-10 flex flex-row align-end self-end place-self-end justify-self-end">
-        <button className="orange_btn">Next</button>
+        <button className="orange_btn" onClick={handleButtonClick}>Next</button>
       </div>
 
       <div className="absolute top-0 right-0">

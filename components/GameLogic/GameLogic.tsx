@@ -24,6 +24,7 @@ import AnswerResponsePage from '../Pages/AnswerResponsePage';
 import AnswerToSlowPage from '../Pages/Player/AnswerToSlowPage';
 import QuizRankingPage from '../Pages/QuizRankingPage';
 import QuizStatsPage from '../Pages/QuizStatsPage';
+import QuizPodiumPage from '../Pages/QuizPodiumPage';
 
 
 // Define the shape of the user data
@@ -241,9 +242,11 @@ newSocket.on('allPlayersAnswered', (roomResponses: PlayerResponse[]) => {
         case 'AnswerToSlow':
           return <AnswerToSlowPage currentScore={currentScore} />
           case 'quizRankingPage':
-        return <QuizRankingPage rankings={rankings}/>;  // Pass rankings as a prop
+        return <QuizRankingPage rankings={rankings} onNavigate={handleNavigate}/>;  // Pass rankings as a prop
         case 'quizStatsPage': 
       return <QuizStatsPage statsData={statsData} onNavigate={handleNavigate}/>;
+      case 'quizPodiumPage':
+        return <QuizPodiumPage rankings={rankings} onNavigate={handleNavigate} />
     default:
       return <StartPage onNavigate={handleNavigate} user={user} socket={socket} handlePlayerName={handlePlayerName}/>;
   }

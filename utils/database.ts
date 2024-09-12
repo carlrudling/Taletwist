@@ -1,4 +1,3 @@
-// utils/database.ts
 import mongoose from 'mongoose';
 
 let isConnected = false; // track the connection
@@ -12,10 +11,9 @@ const dbConnect = async (): Promise<void> => {
   }
 
   try {
+    // Connect to MongoDB without deprecated options
     await mongoose.connect(process.env.MONGODB_URI as string, {
       dbName: "Taletwist",
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
     } as mongoose.ConnectOptions);
 
     isConnected = true;
